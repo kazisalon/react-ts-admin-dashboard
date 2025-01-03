@@ -39,9 +39,8 @@ function App() {
           index
           element={
             <>
-              <PageTitle title="Halesh Clinic" />
-              <ECommerce/>
-
+              <PageTitle title="eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <ECommerce />
             </>
           }
         />
