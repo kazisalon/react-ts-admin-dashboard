@@ -11,7 +11,7 @@ let patients = [
     name: 'Bishal Bashyal',
     gender: 'Male',
     age: 45,
-    visitDate: '12/20/2024',
+    visitDate: '1/3/2025',
     serviceType: 'OPD',
     diagnosis: 'Diabetes',
     status: 'Complete',
@@ -20,24 +20,42 @@ let patients = [
     id: 'P-002',
     name: 'Anil Regmi',
     gender: 'Male',
-    age: 45,
-    visitDate: '1/20/2025',
+    age: 35,
+    visitDate: '1/4/2025',
+    serviceType: 'Emergency',
+    diagnosis: 'Hypertension',
+    status: 'Pending',
+  },
+  {
+    id: 'P-003',
+    name: 'Samrat Ghimire',
+    gender: 'Male',
+    age: 28,
+    visitDate: '1/5/2025',
     serviceType: 'OPD',
-    diagnosis: 'Diabetes',
+    diagnosis: 'Fever',
     status: 'Complete',
   },
   {
-    id: 'P-002',
-    name: 'Samrat Ghimire',
-    gender: 'Male',
-    age: 45,
-    visitDate: '3/20/2025',
+    id: 'P-004',
+    name: 'Sarah Johnson',
+    gender: 'Female',
+    age: 42,
+    visitDate: '2/3/2025',
     serviceType: 'OPD',
-    diagnosis: 'Diabetes',
+    diagnosis: 'Arthritis',
     status: 'Complete',
   },
-  //
-  // Add more sample data
+  {
+    id: 'P-005',
+    name: 'Maya Sharma',
+    gender: 'Female',
+    age: 30,
+    visitDate: '2/4/2025',
+    serviceType: 'Emergency',
+    diagnosis: 'Migraine',
+    status: 'Pending',
+  }
 ];
 
 // Get all patients
@@ -45,11 +63,16 @@ app.get('/api/patients', (req, res) => {
   res.json(patients);
 });
 
-// Get patients by date
-app.get('/api/patients/date/:date', (req, res) => {
-  const filteredPatients = patients.filter(
-    (p) => p.visitDate === req.params.date,
-  );
+// Get patients by month and year
+app.get('/api/patients/date/:month/:year', (req, res) => {
+  const month = parseInt(req.params.month);
+  const year = parseInt(req.params.year);
+  
+  const filteredPatients = patients.filter(patient => {
+    const [visitMonth, visitDay, visitYear] = patient.visitDate.split('/').map(Number);
+    return visitMonth === month && visitYear === year;
+  });
+  
   res.json(filteredPatients);
 });
 

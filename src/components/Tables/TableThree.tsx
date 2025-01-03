@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import flatpickr from 'flatpickr';
 import {
@@ -20,34 +19,25 @@ interface Patient {
 
 const TableThree: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  const formatDate = (date: Date): string => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  const fetchPatients = async (date?: string) => {
+  const fetchPatients = async (date: Date = new Date()) => {
     try {
-      const url = date
-        ? `http://localhost:5000/api/patients/date/${date}`
-        : 'http://localhost:5000/api/patients';
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const url = `http://localhost:5000/api/patients/date/${month}/${year}`;
       const response = await fetch(url);
       const data = await response.json();
       setPatients(data);
       setTotalPages(Math.ceil(data.length / itemsPerPage));
-      setCurrentPage(1); // Reset to first page when new data is fetched
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -58,7 +48,7 @@ const TableThree: React.FC = () => {
       await fetch(`http://localhost:5000/api/patients/${id}`, {
         method: 'DELETE',
       });
-      fetchPatients(selectedDate ?? undefined);
+      fetchPatients(selectedDate);
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error:', error);
@@ -74,13 +64,13 @@ const TableThree: React.FC = () => {
         },
         body: JSON.stringify(updatedPatient),
       });
-      fetchPatients(selectedDate ?? undefined);
+      fetchPatients(selectedDate);
+      setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  // Pagination handlers
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -92,14 +82,12 @@ const TableThree: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Get current page's data
   const getCurrentPageData = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return patients.slice(startIndex, endIndex);
   };
 
-  // Export handlers
   const exportToCSV = () => {
     const headers = ['Patient ID', 'Full Name', 'Gender', 'Age', 'Visit Date', 'Service Type', 'Diagnosis', 'Status'];
     const csvContent = [
@@ -119,8 +107,10 @@ const TableThree: React.FC = () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    const month = selectedDate.getMonth() + 1;
+    const year = selectedDate.getFullYear();
     link.setAttribute('href', url);
-    link.setAttribute('download', `patient_records_${formatDate(new Date())}.csv`);
+    link.setAttribute('download', `patient_records_${month}_${year}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -129,34 +119,44 @@ const TableThree: React.FC = () => {
   useEffect(() => {
     let fpInstance: flatpickr.Instance;
 
-    const elements = document.getElementsByClassName('form-datepicker');
-    if (elements.length > 0) {
-      fpInstance = flatpickr(elements[0], {
-        mode: 'single',
-        dateFormat: 'n/j/Y',
-        onChange: (selectedDates) => {
-          if (selectedDates[0]) {
-            const formattedDate = formatDate(selectedDates[0]);
-            setSelectedDate(formattedDate);
-            fetchPatients(formattedDate);
-          }
-        },
-        onMonthChange: (selectedDates) => {
-          if (selectedDates[0]) {
-            const formattedDate = formatDate(selectedDates[0]);
-            setSelectedDate(formattedDate);
-            fetchPatients(formattedDate);
-          }
-        },
-        prevArrow:
-          '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" /></svg>',
-        nextArrow:
-          '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0l5.4 5.4z" /></svg>',
-      });
-    }
+    const initializeFlatpickr = () => {
+      const elements = document.getElementsByClassName('form-datepicker');
+      if (elements.length > 0) {
+        fpInstance = flatpickr(elements[0], {
+          mode: 'single',
+          dateFormat: 'n/j/Y',
+          defaultDate: selectedDate,
+          enableTime: false,
+          disableMobile: true,
+          onChange: (selectedDates) => {
+            if (selectedDates[0]) {
+              setSelectedDate(selectedDates[0]);
+              fetchPatients(selectedDates[0]);
+            }
+          },
+          onMonthChange: (selectedDates) => {
+            if (selectedDates[0]) {
+              setSelectedDate(selectedDates[0]);
+              fetchPatients(selectedDates[0]);
+            }
+          },
+          prevArrow: `
+            <svg class="fill-current" width="7" height="11" viewBox="0 0 7 11">
+              <path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" />
+            </svg>`,
+          nextArrow: `
+            <svg class="fill-current" width="7" height="11" viewBox="0 0 7 11">
+              <path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0l5.4 5.4z" />
+            </svg>`,
+        });
+      }
+    };
 
-    fetchPatients();
+    // Initialize flatpickr and fetch initial data
+    initializeFlatpickr();
+    fetchPatients(selectedDate);
 
+    // Cleanup
     return () => {
       if (fpInstance) {
         fpInstance.destroy();
@@ -169,7 +169,7 @@ const TableThree: React.FC = () => {
       <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-xl font-semibold text-black dark:text-white">
-            Patient Records
+            Patient Records - {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h4>
           <div className="flex items-center space-x-4">
             <button
@@ -192,59 +192,27 @@ const TableThree: React.FC = () => {
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                <th className="min-w-[100px] py-4 px-4 font-medium text-black dark:text-white">
-                  Patient ID
-                </th>
-                <th className="min-w-[220px] py-4 px-4 font-medium text-black dark:text-white">
-                  Full Name
-                </th>
-                <th className="min-w-[150px] py-4 px-4 font-medium text-black dark:text-white">
-                  Gender
-                </th>
-                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
-                  Age
-                </th>
-                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
-                  Visit Date
-                </th>
-                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
-                  Service Type
-                </th>
-                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
-                  Diagnosis
-                </th>
-                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
-                  Status
-                </th>
-                <th className="py-4 px-4 font-medium text-black dark:text-white">
-                  Actions
-                </th>
+                <th className="min-w-[100px] py-4 px-4 font-medium text-black dark:text-white">Patient ID</th>
+                <th className="min-w-[220px] py-4 px-4 font-medium text-black dark:text-white">Full Name</th>
+                <th className="min-w-[150px] py-4 px-4 font-medium text-black dark:text-white">Gender</th>
+                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">Age</th>
+                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">Visit Date</th>
+                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">Service Type</th>
+                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">Diagnosis</th>
+                <th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">Status</th>
+                <th className="py-4 px-4 font-medium text-black dark:text-white">Actions</th>
               </tr>
             </thead>
             <tbody>
               {getCurrentPageData().map((patient, key) => (
                 <tr key={key}>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.id}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.name}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.gender}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.age}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.visitDate}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.serviceType}
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    {patient.diagnosis}
-                  </td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.id}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.name}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.gender}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.age}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.visitDate}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.serviceType}</td>
+                  <td className="border-b border-[#eee] py-5 px-4">{patient.diagnosis}</td>
                   <td className="border-b border-[#eee] py-5 px-4">
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
@@ -337,14 +305,12 @@ const TableThree: React.FC = () => {
             isOpen={isViewModalOpen}
             onClose={() => setIsViewModalOpen(false)}
           />
-
           <EditPatientModal
             patient={selectedPatient}
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             onEdit={handleEdit}
           />
-
           <DeletePatientModal
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
@@ -357,4 +323,3 @@ const TableThree: React.FC = () => {
 };
 
 export default TableThree;
-
